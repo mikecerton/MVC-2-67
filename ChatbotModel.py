@@ -7,23 +7,31 @@ class ChatbotModel:
     def __init__(self, data_file="chatbot_data.csv", log_file="chatbot_logs.csv"):
         self.data_file = data_file
         self.log_file = log_file
+
+        # เก็บสถานะของคำถามและอารมณ์ก่อนหน้า
         self.previous_question_type = None
         self.previous_emotion = None
         self.emotion_log = []
+
+        # โหลดข้อมูลจากไฟล์ CSV
         self.load_data()
         self.load_logs()
 
+    # โหลดฐานข้อมูลคำถามและคำตอบจากไฟล์ CSV
     def load_data(self):
         self.data = pd.read_csv(self.data_file)
         print(len(self.data))
 
+    # โหลดประวัติlogs
     def load_logs(self):
         self.logs = pd.read_csv(self.log_file)
         print(len(self.logs))
 
+    # บันทึกประวัติการสนทนาไปที่ไฟล์ CSV
     def save_logs(self):
         self.logs.to_csv(self.log_file, index=False)
 
+     # เลือกคำตอบจากcsvตามประเภทคำถาม
     def model_send_all_answerw(self, question_type):
         answer = self.get_random_answer(question_type)
 
@@ -38,8 +46,11 @@ class ChatbotModel:
         else:
             emotion = 50
         
+        # บันทึกค่าก่อนหน้าของคำถามและอารมณ์
         self.previous_question_type = question_type
         self.previous_emotion = emotion
+
+        # เพิ่มบันทึกใหม่ใน log
         self.emotion_log.append(question_type)
         new_logg = pd.DataFrame({"question_type": [question_type], "emotion": [emotion], "answer": [answer]})
         self.logs = pd.concat([self.logs, new_logg], ignore_index=True)
@@ -47,6 +58,7 @@ class ChatbotModel:
 
         return question_type, answer, emotion
     
+    # คำนวณอารมณ์สำหรับคำถามประเภท "วิทยาศาสตร์"
     def cal_emotion_sci(self):
         if self.previous_question_type == "อารมณ์" and self.previous_emotion < 30:
             emotion = random.randint(10, 40)
@@ -54,6 +66,7 @@ class ChatbotModel:
             emotion = random.randint(50, 80)
         return emotion
     
+    # คำนวณอารมณ์สำหรับคำถามประเภท "ความรู้ทั่วไป"
     def cal_emotion_general(self):
         if self.previous_question_type == "วิทยาศาสตร์" and self.previous_emotion < 60:
                 emotion = random.randint(30, 60)
@@ -61,6 +74,7 @@ class ChatbotModel:
             emotion = random.randint(70, 100)
         return emotion
     
+    # คำนวณอารมณ์สำหรับคำถามประเภท "คําถามเชิงอารมณ์"
     def cal_emotion_emo(self):
         if len(self.emotion_log) >= 3 and self.emotion_log[-3:] == ["อารมณ์"] * 3:
                 emotion = random.randint(20, 50)
@@ -69,13 +83,15 @@ class ChatbotModel:
         else:
             emotion = 100
         return emotion
-        
+    
+    # ดึงคำตอบแบบสุ่มจากฐานข้อมูลตามประเภทของคำถาม
     def get_random_answer(self, question_type):
         filtered = self.data[self.data["question_type"] == question_type]
         if not filtered.empty:
             return filtered.sample(n=1)["answer"].values[0]
         return "ไม่มีคำตอบในฐานข้อมูล"
-
+    
+    # คำนวณค่าเฉลี่ยของอารมณ์จากlogs
     def get_emotion_statistics(self):
             if self.logs.empty:
                 return 0, 0, 0, 0
